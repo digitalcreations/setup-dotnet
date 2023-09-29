@@ -118,6 +118,24 @@ describe('installer tests', () => {
 
         expect(scriptArguments).toContain(expectedArgument);
       });
+      
+      it('Acquires architecture-specific version of dotnet if no matching version is installed', async () => {
+	    await getDotnet('3.1', '', 'x64');
+	    var directory = fs
+	      .readdirSync(path.join(toolDir, 'sdk'))
+	      .filter(fn => fn.startsWith('3.1.'));
+	    expect(directory.length > 0).toBe(true);
+	    if (IS_WINDOWS) {
+	      expect(fs.existsSync(path.join(toolDir, 'dotnet.exe'))).toBe(true);
+	    } else {
+	      expect(fs.existsSync(path.join(toolDir, 'dotnet'))).toBe(true);
+	    }
+	
+	    expect(process.env.DOTNET_ROOT).toBeDefined;
+	    expect(process.env.PATH).toBeDefined;
+	    expect(process.env.DOTNET_ROOT).toBe(toolDir);
+	    expect(process.env.PATH?.startsWith(toolDir)).toBe(true);
+	  }, 600000); //This needs some time to download on "slower" internet connections
 
       it(`should warn if the 'quality' input is set and the supplied version is in A.B.C syntax`, async () => {
         const inputVersion = '6.0.300';
@@ -490,3 +508,25 @@ describe('installer tests', () => {
     });
   });
 });
+
+function normalizeFileContents(contents: string): string {
+  return contents
+    .trim()
+    .replace(new RegExp('\r\n', 'g'), '\n')
+    .replace(new RegExp('\r', 'g'), '\n');
+}
+
+async function getDotnet(
+  version: string,
+  quality: string = '',
+  architecture: string = ''
+): Promise<string> {
+  const dotnetInstaller = new installer.DotnetCoreInstaller(
+    version,
+    quality as QualityOptions,
+    architecture
+  );
+  const installedVersion = await dotnetInstaller.installDotnet();
+  installer.DotnetCoreInstaller.addToPath();
+  return installedVersion;
+}
