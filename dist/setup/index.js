@@ -72984,7 +72984,7 @@ class DotnetInstallScript {
         this.scriptArguments.push(...args);
         return this;
     }
-    useVersion(dotnetVersion, quality) {
+    useVersion(dotnetVersion, quality, architecture) {
         if (dotnetVersion.type) {
             this.useArguments(dotnetVersion.type, dotnetVersion.value);
         }
@@ -72994,6 +72994,9 @@ class DotnetInstallScript {
         }
         if (quality) {
             this.useArguments(utils_1.IS_WINDOWS ? '-Quality' : '--quality', quality);
+        }
+        if (architecture) {
+            this.useArguments(utils_1.IS_WINDOWS ? '-Architecture' : '--architecture', architecture);
         }
         return this;
     }
@@ -73035,9 +73038,10 @@ DotnetInstallDir.dirPath = process.env['DOTNET_INSTALL_DIR']
     ? DotnetInstallDir.convertInstallPathToAbsolute(process.env['DOTNET_INSTALL_DIR'])
     : DotnetInstallDir.default[utils_1.PLATFORM];
 class DotnetCoreInstaller {
-    constructor(version, quality) {
+    constructor(version, quality, architecture) {
         this.version = version;
         this.quality = quality;
+        this.architecture = architecture;
     }
     installDotnet() {
         return __awaiter(this, void 0, void 0, function* () {
@@ -73070,7 +73074,7 @@ class DotnetCoreInstaller {
                 // Don't overwrite CLI because it should be already installed
                 .useArguments(utils_1.IS_WINDOWS ? '-SkipNonVersionedFiles' : '--skip-non-versioned-files')
                 // Use version provided by user
-                .useVersion(dotnetVersion, this.quality)
+                .useVersion(dotnetVersion, this.quality, this.architecture)
                 .execute();
             if (dotnetInstallOutput.exitCode) {
                 throw new Error(`Failed to install dotnet, exit code: ${dotnetInstallOutput.exitCode}. ${dotnetInstallOutput.stderr}`);
@@ -73169,6 +73173,7 @@ function run() {
             //
             const versions = core.getMultilineInput('dotnet-version');
             const installedDotnetVersions = [];
+            const architecture = core.getInput('architecture');
             const globalJsonFileInput = core.getInput('global-json-file');
             if (globalJsonFileInput) {
                 const globalJsonPath = path_1.default.resolve(process.cwd(), globalJsonFileInput);
@@ -73196,7 +73201,7 @@ function run() {
                 let dotnetInstaller;
                 const uniqueVersions = new Set(versions);
                 for (const version of uniqueVersions) {
-                    dotnetInstaller = new installer_1.DotnetCoreInstaller(version, quality);
+                    dotnetInstaller = new installer_1.DotnetCoreInstaller(version, quality, architecture);
                     const installedVersion = yield dotnetInstaller.installDotnet();
                     installedDotnetVersions.push(installedVersion);
                 }

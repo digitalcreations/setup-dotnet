@@ -1,12 +1,12 @@
 import * as core from '@actions/core';
-import { DotnetCoreInstaller, DotnetInstallDir } from './installer';
+import {DotnetCoreInstaller, DotnetInstallDir} from './installer';
 import * as fs from 'fs';
 import path from 'path';
 import semver from 'semver';
 import * as auth from './authutil';
-import { isCacheFeatureAvailable } from './cache-utils';
-import { restoreCache } from './cache-restore';
-import { Outputs } from './constants';
+import {isCacheFeatureAvailable} from './cache-utils';
+import {restoreCache} from './cache-restore';
+import {Outputs} from './constants';
 import JSON5 from 'json5';
 
 const qualityOptions = [
@@ -18,6 +18,7 @@ const qualityOptions = [
 ] as const;
 
 export type QualityOptions = (typeof qualityOptions)[number];
+export type Architecture = 'x64' | 'arm64' | 'x86' | undefined;
 
 export async function run() {
   try {
@@ -32,9 +33,7 @@ export async function run() {
     //
     const versions = core.getMultilineInput('dotnet-version');
     const installedDotnetVersions: string[] = [];
-    const architecture = core.getInput('architecture');
-
-    core.debug(`Read architecture: '${architecture}'`)
+    const architecture = core.getInput('architecture') as Architecture;
 
     const globalJsonFileInput = core.getInput('global-json-file');
     if (globalJsonFileInput) {
@@ -78,7 +77,7 @@ export async function run() {
           architecture
         );
         const installedVersion = await dotnetInstaller.installDotnet();
-        installedDotnetVersions.push(installedVersion);
+        installedDotnetVersions.push(installedVersion!);
       }
       DotnetInstallDir.addToPath();
     }
@@ -107,7 +106,7 @@ function getVersionFromGlobalJson(globalJsonPath: string): string {
   let version = '';
   const globalJson = JSON5.parse(
     // .trim() is necessary to strip BOM https://github.com/nodejs/node/issues/20649
-    fs.readFileSync(globalJsonPath, { encoding: 'utf8' }).trim(),
+    fs.readFileSync(globalJsonPath, {encoding: 'utf8'}).trim(),
     // is necessary as JSON5 supports wider variety of options for numbers: https://www.npmjs.com/package/json5#numbers
     (key, value) => {
       if (key === 'version' || key === 'rollForward') return String(value);
