@@ -73024,24 +73024,29 @@ class DotnetInstallDir {
         core.addPath(process.env['DOTNET_INSTALL_DIR']);
         core.exportVariable('DOTNET_ROOT', process.env['DOTNET_INSTALL_DIR']);
     }
-    static setEnvironmentVariable() {
-        process.env['DOTNET_INSTALL_DIR'] = DotnetInstallDir.dirPath;
+    static setEnvironmentVariable(architecture) {
+        process.env['DOTNET_INSTALL_DIR'] = DotnetInstallDir.dirPath(architecture);
     }
 }
 exports.DotnetInstallDir = DotnetInstallDir;
 DotnetInstallDir.default = {
     linux: '/usr/share/dotnet',
     mac: path_1.default.join(process.env['HOME'] + '', '.dotnet'),
-    windows: path_1.default.join(process.env['PROGRAMFILES'] + '', 'dotnet')
+    windows: path_1.default.join(process.env['PROGRAMFILES'] + '', 'dotnet'),
+    windows_x86: path_1.default.join(process.env['PROGRAMFILES(X86)'] + '', 'dotnet')
 };
-DotnetInstallDir.dirPath = process.env['DOTNET_INSTALL_DIR']
-    ? DotnetInstallDir.convertInstallPathToAbsolute(process.env['DOTNET_INSTALL_DIR'])
-    : DotnetInstallDir.default[utils_1.PLATFORM];
+DotnetInstallDir.dirPath = (architecture) => {
+    const architectureSuffix = architecture === 'x86' && utils_1.PLATFORM === 'windows' ? '_x86' : '';
+    return process.env['DOTNET_INSTALL_DIR']
+        ? DotnetInstallDir.convertInstallPathToAbsolute(process.env['DOTNET_INSTALL_DIR'])
+        : DotnetInstallDir.default[utils_1.PLATFORM + architectureSuffix];
+};
 class DotnetCoreInstaller {
-    constructor(version, quality, architecture) {
+    constructor(version, quality, architecture = undefined) {
         this.version = version;
         this.quality = quality;
         this.architecture = architecture;
+        DotnetInstallDir.setEnvironmentVariable(architecture);
     }
     installDotnet() {
         return __awaiter(this, void 0, void 0, function* () {
@@ -73093,9 +73098,6 @@ class DotnetCoreInstaller {
     }
 }
 exports.DotnetCoreInstaller = DotnetCoreInstaller;
-(() => {
-    DotnetInstallDir.setEnvironmentVariable();
-})();
 
 
 /***/ }),

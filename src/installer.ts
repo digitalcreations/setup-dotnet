@@ -3,12 +3,12 @@ import * as core from '@actions/core';
 import * as exec from '@actions/exec';
 import * as io from '@actions/io';
 import * as hc from '@actions/http-client';
-import {chmodSync} from 'fs';
+import { chmodSync } from 'fs';
 import path from 'path';
-import os from 'os';
+import os, { arch } from 'os';
 import semver from 'semver';
-import {IS_WINDOWS, PLATFORM} from './utils';
-import {QualityOptions, Architecture} from './setup-dotnet';
+import { IS_WINDOWS, PLATFORM } from './utils';
+import { QualityOptions, Architecture } from './setup-dotnet';
 
 export interface DotnetVersion {
   type: string;
@@ -24,7 +24,7 @@ export class DotnetVersionResolver {
 
   constructor(version: string) {
     this.inputVersion = version.trim();
-    this.resolvedArgument = {type: '', value: '', qualityFlag: false};
+    this.resolvedArgument = { type: '', value: '', qualityFlag: false };
   }
 
   private async resolveVersionInput(): Promise<void> {
@@ -215,7 +215,7 @@ export class DotnetInstallScript {
   public async execute() {
     const getExecOutputOptions = {
       ignoreReturnCode: true,
-      env: process.env as {string: string}
+      env: process.env as { string: string }
     };
 
     return exec.getExecOutput(
@@ -230,14 +230,16 @@ export abstract class DotnetInstallDir {
   private static readonly default = {
     linux: '/usr/share/dotnet',
     mac: path.join(process.env['HOME'] + '', '.dotnet'),
-    windows: path.join(process.env['PROGRAMFILES'] + '', 'dotnet')
+    windows: path.join(process.env['PROGRAMFILES'] + '', 'dotnet'),
+    windows_x86: path.join(process.env['PROGRAMFILES(X86)'] + '', 'dotnet')
   };
 
-  public static readonly dirPath = process.env['DOTNET_INSTALL_DIR']
-    ? DotnetInstallDir.convertInstallPathToAbsolute(
-        process.env['DOTNET_INSTALL_DIR']
-      )
-    : DotnetInstallDir.default[PLATFORM];
+  public static readonly dirPath = (architecture: Architecture) => {
+    const architectureSuffix = architecture === 'x86' && PLATFORM === 'windows' ? '_x86' : '';
+    return process.env['DOTNET_INSTALL_DIR']
+      ? DotnetInstallDir.convertInstallPathToAbsolute(process.env['DOTNET_INSTALL_DIR'])
+      : DotnetInstallDir.default[PLATFORM + architectureSuffix];
+  }
 
   private static convertInstallPathToAbsolute(installDir: string): string {
     if (path.isAbsolute(installDir)) return path.normalize(installDir);
@@ -254,21 +256,19 @@ export abstract class DotnetInstallDir {
     core.exportVariable('DOTNET_ROOT', process.env['DOTNET_INSTALL_DIR']);
   }
 
-  public static setEnvironmentVariable() {
-    process.env['DOTNET_INSTALL_DIR'] = DotnetInstallDir.dirPath;
+  public static setEnvironmentVariable(architecture: Architecture) {
+    process.env['DOTNET_INSTALL_DIR'] = DotnetInstallDir.dirPath(architecture);
   }
 }
 
 export class DotnetCoreInstaller {
-  static {
-    DotnetInstallDir.setEnvironmentVariable();
-  }
-
   constructor(
     private version: string,
     private quality: QualityOptions,
-    private architecture: Architecture
-  ) {}
+    private architecture: Architecture = undefined
+  ) {
+    DotnetInstallDir.setEnvironmentVariable(architecture);
+  }
 
   public async installDotnet(): Promise<string | null> {
     const versionResolver = new DotnetVersionResolver(this.version);

@@ -7,15 +7,15 @@ import * as core from '@actions/core';
 import * as io from '@actions/io';
 import * as installer from '../src/installer';
 
-import {IS_WINDOWS} from '../src/utils';
-import {QualityOptions} from '../src/setup-dotnet';
+import { IS_WINDOWS } from '../src/utils';
+import { QualityOptions } from '../src/setup-dotnet';
 
 describe('installer tests', () => {
   const env = process.env;
 
   beforeEach(() => {
     jest.resetModules();
-    process.env = {...env};
+    process.env = { ...env };
   });
 
   describe('DotnetCoreInstaller tests', () => {
@@ -29,7 +29,7 @@ describe('installer tests', () => {
     describe('installDotnet() tests', () => {
       beforeAll(() => {
         whichSpy.mockImplementation(() => Promise.resolve('PathToShell'));
-        chmodSyncSpy.mockImplementation(() => {});
+        chmodSyncSpy.mockImplementation(() => { });
         readdirSpy.mockImplementation(() => Promise.resolve([]));
       });
 
